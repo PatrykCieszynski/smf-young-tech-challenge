@@ -34,5 +34,9 @@ return [
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
     ],
+    
+    'pdftotext' => [
+        'binary_path' => env('PDFTOTEXT_PATH'),
+    ],
 
 ];

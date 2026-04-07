@@ -11,13 +11,12 @@ This project currently provides a basic `documents` flow:
 - list uploaded documents
 - get document details
 - delete a document
-- trigger a placeholder processing action
+- process uploaded documents
+- extract text from images using Tesseract OCR
+- extract text from PDF files using `pdftotext`
+- store extracted text in the `ocr_text` field
 
-At this stage, the processing endpoint is a foundation for the next steps:
-
-- text extraction (OCR / PDF text extraction)
-- AI-based structured data extraction
-- saving parsed invoice data into SQL models
+At this stage, the next step is AI-based structured data extraction and saving parsed invoice data into SQL models.
 
 ## Tech stack
 
@@ -29,7 +28,25 @@ At this stage, the processing endpoint is a foundation for the next steps:
 
 - PHP
 - Composer
-- Node.js / npm
+- Tesseract OCR
+- `pdftotext`
+
+## Configuration
+
+Add the following variable to your `.env` file:
+
+```env
+PDFTOTEXT_PATH=
+```
+
+Example:
+
+```env
+PDFTOTEXT_PATH=C:\Tools\xpdf\pdftotext.exe
+```
+
+`Tesseract` is expected to be available in the system PATH.
+
 
 ## Local setup
 
@@ -95,12 +112,13 @@ multipart/form-data
 - document migration
 - file upload endpoint
 - list, details and delete endpoints
-- placeholder processing endpoint
+- document processing endpoint
+- image OCR with Tesseract
+- PDF text extraction with `pdftotext`
+- extracted text storage in `ocr_text`
 
 ### Planned next
 
-- PDF text extraction
-- OCR for images
 - AI extraction to structured invoice data
 - invoice-related SQL models
 - Swagger documentation

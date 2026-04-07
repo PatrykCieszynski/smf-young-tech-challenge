@@ -5,9 +5,10 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreDocumentRequest;
 use App\Models\Document;
+use App\Services\TextExtraction\TextExtractionService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Throwable;
 
 class DocumentController extends Controller
 {
@@ -66,7 +67,7 @@ class DocumentController extends Controller
         ]);
     }
 
-    public function process(Document $document): JsonResponse
+    public function process(Document $document, TextExtractionService $textExtractionService): JsonResponse
     {
         if (!Storage::disk('local')->exists($document->stored_path)) {
             $document->update([
@@ -93,14 +94,46 @@ class DocumentController extends Controller
             'error_message' => null,
         ]);
 
-        $document->update([
-            'status' => 'processed',
-            'processed_at' => now(),
-        ]);
+        try {
+            $absolutePath = Storage::disk('local')->path($document->stored_path);
+            $extractedText = $textExtractionService->extractFromDocument($document, $absolutePath);
 
-        return response()->json([
-            'message' => 'Document processed successfully.',
-            'document' => $document->fresh(),
-        ]);
+            if ($extractedText === '') {
+                $document->update([
+                    'status' => 'failed',
+                    'ocr_text' => null,
+                    'error_message' => 'No text could be extracted from the document.',
+                    'processed_at' => null,
+                ]);
+
+                return response()->json([
+                    'message' => 'Document processing failed.',
+                    'document' => $document->fresh(),
+                ], 422);
+            }
+
+            $document->update([
+                'status' => 'processed',
+                'ocr_text' => $extractedText,
+                'error_message' => null,
+                'processed_at' => now(),
+            ]);
+
+            return response()->json([
+                'message' => 'Document processed successfully.',
+                'document' => $document->fresh(),
+            ]);
+        } catch (Throwable $exception) {
+            $document->update([
+                'status' => 'failed',
+                'error_message' => $exception->getMessage(),
+                'processed_at' => null,
+            ]);
+
+            return response()->json([
+                'message' => 'Document processing failed.',
+                'document' => $document->fresh(),
+            ], 500);
+        }
     }
 }
