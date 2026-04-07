@@ -7,9 +7,28 @@ use App\Http\Requests\StoreDocumentRequest;
 use App\Models\Document;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class DocumentController extends Controller
 {
+    public function index(): JsonResponse
+    {
+        $documents = Document::query()
+            ->latest()
+            ->get();
+
+        return response()->json([
+            'data' => $documents,
+        ]);
+    }
+
+    public function show(Document $document): JsonResponse
+    {
+        return response()->json([
+            'data' => $document,
+        ]);
+    }
+
     public function store(StoreDocumentRequest $request): JsonResponse
     {
         $uploadedFile = $request->file('file');
@@ -32,5 +51,56 @@ class DocumentController extends Controller
             'message' => 'Document uploaded successfully.',
             'document' => $document,
         ], 201);
+    }
+
+    public function destroy(Document $document): JsonResponse
+    {
+        if (Storage::disk('local')->exists($document->stored_path)) {
+            Storage::disk('local')->delete($document->stored_path);
+        }
+
+        $document->delete();
+
+        return response()->json([
+            'message' => 'Document deleted successfully.',
+        ]);
+    }
+
+    public function process(Document $document): JsonResponse
+    {
+        if (!Storage::disk('local')->exists($document->stored_path)) {
+            $document->update([
+                'status' => 'failed',
+                'error_message' => 'Stored file was not found.',
+                'processed_at' => null,
+            ]);
+
+            return response()->json([
+                'message' => 'Document processing failed.',
+                'document' => $document->fresh(),
+            ], 404);
+        }
+
+        if ($document->status === 'processed') {
+            return response()->json([
+                'message' => 'Document is already processed.',
+                'document' => $document,
+            ]);
+        }
+
+        $document->update([
+            'status' => 'processing',
+            'error_message' => null,
+        ]);
+
+        $document->update([
+            'status' => 'processed',
+            'processed_at' => now(),
+        ]);
+
+        return response()->json([
+            'message' => 'Document processed successfully.',
+            'document' => $document->fresh(),
+        ]);
     }
 }
