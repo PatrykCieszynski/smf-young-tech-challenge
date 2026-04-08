@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreDocumentRequest;
 use App\Models\Document;
+use App\Services\Ai\DocumentAiExtractionService;
 use App\Services\TextExtraction\TextExtractionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Storage;
@@ -67,8 +68,11 @@ class DocumentController extends Controller
         ]);
     }
 
-    public function process(Document $document, TextExtractionService $textExtractionService): JsonResponse
-    {
+    public function process(
+        Document $document,
+        TextExtractionService $textExtractionService,
+        DocumentAiExtractionService $documentAiExtractionService,
+    ): JsonResponse {
         if (!Storage::disk('local')->exists($document->stored_path)) {
             $document->update([
                 'status' => 'failed',
@@ -82,13 +86,6 @@ class DocumentController extends Controller
             ], 404);
         }
 
-        if ($document->status === 'processed') {
-            return response()->json([
-                'message' => 'Document is already processed.',
-                'document' => $document,
-            ]);
-        }
-
         $document->update([
             'status' => 'processing',
             'error_message' => null,
@@ -96,12 +93,14 @@ class DocumentController extends Controller
 
         try {
             $absolutePath = Storage::disk('local')->path($document->stored_path);
+
             $extractedText = $textExtractionService->extractFromDocument($document, $absolutePath);
 
             if ($extractedText === '') {
                 $document->update([
                     'status' => 'failed',
                     'ocr_text' => null,
+                    'ai_raw_response' => null,
                     'error_message' => 'No text could be extracted from the document.',
                     'processed_at' => null,
                 ]);
@@ -112,9 +111,12 @@ class DocumentController extends Controller
                 ], 422);
             }
 
+            $aiResult = $documentAiExtractionService->extract($extractedText);
+
             $document->update([
                 'status' => 'processed',
                 'ocr_text' => $extractedText,
+                'ai_raw_response' => $aiResult['raw_response'],
                 'error_message' => null,
                 'processed_at' => now(),
             ]);
@@ -122,6 +124,7 @@ class DocumentController extends Controller
             return response()->json([
                 'message' => 'Document processed successfully.',
                 'document' => $document->fresh(),
+                'parsed_data' => $aiResult['parsed_data'],
             ]);
         } catch (Throwable $exception) {
             $document->update([

@@ -34,9 +34,14 @@ return [
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
     ],
-    
+
     'pdftotext' => [
         'binary_path' => env('PDFTOTEXT_PATH'),
+    ],
+
+    'ollama' => [
+        'url' => env('OLLAMA_URL', 'http://127.0.0.1:11434'),
+        'model' => env('OLLAMA_MODEL', 'llama3.1'),
     ],
 
 ];
