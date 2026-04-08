@@ -34,6 +34,19 @@ The application is split into a few simple layers:
 - `InvoiceController` exposes persisted invoice data through read endpoints
 - OpenAPI / Swagger documents the public API
 
+## Sample files
+
+Sample invoice files for manual testing are available in:
+```text
+resources/ocrFiles
+```
+They can be used with the POST /api/documents endpoint to verify:
+
+- image OCR with Tesseract
+- PDF text extraction with pdftotext
+- AI-based structured data extraction with Ollama
+
+
 ## Tech stack
 
 - PHP 8.4
