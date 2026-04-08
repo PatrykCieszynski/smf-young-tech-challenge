@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreDocumentRequest;
 use App\Models\Document;
 use App\Services\Ai\DocumentAiExtractionService;
+use App\Services\Persistence\InvoicePersistenceService;
 use App\Services\TextExtraction\TextExtractionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Storage;
@@ -72,6 +73,7 @@ class DocumentController extends Controller
         Document $document,
         TextExtractionService $textExtractionService,
         DocumentAiExtractionService $documentAiExtractionService,
+        InvoicePersistenceService $invoicePersistenceService,
     ): JsonResponse {
         if (!Storage::disk('local')->exists($document->stored_path)) {
             $document->update([
@@ -113,6 +115,8 @@ class DocumentController extends Controller
 
             $aiResult = $documentAiExtractionService->extract($extractedText);
 
+            $invoice = $invoicePersistenceService->persist($document, $aiResult['parsed_data']);
+
             $document->update([
                 'status' => 'processed',
                 'ocr_text' => $extractedText,
@@ -124,6 +128,7 @@ class DocumentController extends Controller
             return response()->json([
                 'message' => 'Document processed successfully.',
                 'document' => $document->fresh(),
+                'invoice' => $invoice,
                 'parsed_data' => $aiResult['parsed_data'],
             ]);
         } catch (Throwable $exception) {

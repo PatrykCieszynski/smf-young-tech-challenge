@@ -17,8 +17,8 @@ This project currently provides a basic `documents` flow:
 - extract structured invoice data with Ollama
 - store extracted text in the `ocr_text` field
 - store raw AI output in the `ai_raw_response` field
-
-At this stage, the next step is saving parsed invoice data into SQL models.
+- persist parsed invoice data into SQL tables
+- create linked records in `contractors`, `invoices`, `items`, and `payments`
 
 ## Tech stack
 
@@ -140,8 +140,9 @@ multipart/form-data
 - AI-based structured invoice data extraction with Ollama
 - extracted text storage in `ocr_text`
 - raw AI response storage in `ai_raw_response`
+- parsed invoice data persistence to SQL tables
+- linked invoice storage in `contractors`, `invoices`, `items`, and `payments`
 
 ### Planned next
 
-- save parsed invoice data into SQL tables (`contractor`, `invoice`, `items`, `payments`)
 - Swagger documentation
