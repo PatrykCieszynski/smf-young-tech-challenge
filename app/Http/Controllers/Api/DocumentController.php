@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreDocumentRequest;
+use App\Http\Requests\UpdateDocumentRequest;
 use App\Models\Document;
 use App\Services\Ai\DocumentAiExtractionService;
 use App\Services\Persistence\InvoicePersistenceService;
@@ -80,6 +81,18 @@ class DocumentController extends Controller
                         type: 'string',
                         format: 'binary'
                     ),
+                    new OA\Property(
+                        property: 'title',
+                        type: 'string',
+                        example: 'April invoice',
+                        nullable: true
+                    ),
+                    new OA\Property(
+                        property: 'notes',
+                        type: 'string',
+                        example: 'Imported from OCR test batch',
+                        nullable: true
+                    ),
                 ]
             )
         )
@@ -100,6 +113,8 @@ class DocumentController extends Controller
 
         $document = Document::create([
             'original_name' => $uploadedFile->getClientOriginalName(),
+            'title' => $request->input('title', $uploadedFile->getClientOriginalName()),
+            'notes' => $request->input('notes'),
             'stored_path' => $storedPath,
             'mime_type' => $uploadedFile->getMimeType(),
             'file_size' => $uploadedFile->getSize(),
@@ -114,6 +129,59 @@ class DocumentController extends Controller
             'message' => 'Document uploaded successfully.',
             'document' => $document,
         ], 201);
+    }
+
+    #[OA\Patch(
+        path: '/api/documents/{document}',
+        summary: 'Update document metadata',
+        tags: ['Documents']
+    )]
+    #[OA\Parameter(
+        name: 'document',
+        description: 'Document ID',
+        in: 'path',
+        required: true,
+        schema: new OA\Schema(type: 'integer')
+    )]
+    #[OA\RequestBody(
+        required: true,
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(
+                    property: 'title',
+                    type: 'string',
+                    example: 'April invoice',
+                    nullable: true
+                ),
+                new OA\Property(
+                    property: 'notes',
+                    type: 'string',
+                    example: 'Imported from OCR test batch',
+                    nullable: true
+                ),
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 200,
+        description: 'Document updated successfully'
+    )]
+    #[OA\Response(
+        response: 404,
+        description: 'Document not found'
+    )]
+    #[OA\Response(
+        response: 422,
+        description: 'Validation failed'
+    )]
+    public function update(UpdateDocumentRequest $request, Document $document): JsonResponse
+    {
+        $document->update($request->validated());
+
+        return response()->json([
+            'message' => 'Document updated successfully.',
+            'document' => $document->fresh(),
+        ]);
     }
 
     #[OA\Delete(

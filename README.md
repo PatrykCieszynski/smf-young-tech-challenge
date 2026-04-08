@@ -116,6 +116,7 @@ http://smf-young-tech-challenge.test
 - `POST /api/documents`
 - `GET /api/documents`
 - `GET /api/documents/{id}`
+- `PATCH /api/documents/{id}`
 - `DELETE /api/documents/{id}`
 - `POST /api/documents/{id}/process`
 
@@ -141,6 +142,8 @@ multipart/form-data
 **Form field:**
 
 - `file` - uploaded file
+- `title` - custom title for document, can be null
+- `notes` custom notes for document, can be null
 
 **Supported file types:**
 
