@@ -10,10 +10,21 @@ use App\Services\Persistence\InvoicePersistenceService;
 use App\Services\TextExtraction\TextExtractionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Storage;
+use OpenApi\Attributes as OA;
 use Throwable;
 
+#[OA\Tag(name: 'Documents')]
 class DocumentController extends Controller
 {
+    #[OA\Get(
+        path: '/api/documents',
+        summary: 'List documents',
+        tags: ['Documents']
+    )]
+    #[OA\Response(
+        response: 200,
+        description: 'Documents fetched successfully'
+    )]
     public function index(): JsonResponse
     {
         $documents = Document::query()
@@ -25,6 +36,26 @@ class DocumentController extends Controller
         ]);
     }
 
+    #[OA\Get(
+        path: '/api/documents/{document}',
+        summary: 'Show document details',
+        tags: ['Documents']
+    )]
+    #[OA\Parameter(
+        name: 'document',
+        description: 'Document ID',
+        in: 'path',
+        required: true,
+        schema: new OA\Schema(type: 'integer')
+    )]
+    #[OA\Response(
+        response: 200,
+        description: 'Document fetched successfully'
+    )]
+    #[OA\Response(
+        response: 404,
+        description: 'Document not found'
+    )]
     public function show(Document $document): JsonResponse
     {
         return response()->json([
@@ -32,6 +63,35 @@ class DocumentController extends Controller
         ]);
     }
 
+    #[OA\Post(
+        path: '/api/documents',
+        summary: 'Upload a document',
+        tags: ['Documents']
+    )]
+    #[OA\RequestBody(
+        required: true,
+        content: new OA\MediaType(
+            mediaType: 'multipart/form-data',
+            schema: new OA\Schema(
+                required: ['file'],
+                properties: [
+                    new OA\Property(
+                        property: 'file',
+                        type: 'string',
+                        format: 'binary'
+                    ),
+                ]
+            )
+        )
+    )]
+    #[OA\Response(
+        response: 201,
+        description: 'Document uploaded successfully'
+    )]
+    #[OA\Response(
+        response: 422,
+        description: 'Validation failed'
+    )]
     public function store(StoreDocumentRequest $request): JsonResponse
     {
         $uploadedFile = $request->file('file');
@@ -56,6 +116,26 @@ class DocumentController extends Controller
         ], 201);
     }
 
+    #[OA\Delete(
+        path: '/api/documents/{document}',
+        summary: 'Delete a document',
+        tags: ['Documents']
+    )]
+    #[OA\Parameter(
+        name: 'document',
+        description: 'Document ID',
+        in: 'path',
+        required: true,
+        schema: new OA\Schema(type: 'integer')
+    )]
+    #[OA\Response(
+        response: 200,
+        description: 'Document deleted successfully'
+    )]
+    #[OA\Response(
+        response: 404,
+        description: 'Document not found'
+    )]
     public function destroy(Document $document): JsonResponse
     {
         if (Storage::disk('local')->exists($document->stored_path)) {
@@ -69,6 +149,34 @@ class DocumentController extends Controller
         ]);
     }
 
+    #[OA\Post(
+        path: '/api/documents/{document}/process',
+        summary: 'Process a document',
+        tags: ['Documents']
+    )]
+    #[OA\Parameter(
+        name: 'document',
+        description: 'Document ID',
+        in: 'path',
+        required: true,
+        schema: new OA\Schema(type: 'integer')
+    )]
+    #[OA\Response(
+        response: 200,
+        description: 'Document processed successfully'
+    )]
+    #[OA\Response(
+        response: 404,
+        description: 'Stored file was not found'
+    )]
+    #[OA\Response(
+        response: 422,
+        description: 'No text could be extracted from the document'
+    )]
+    #[OA\Response(
+        response: 500,
+        description: 'Document processing failed'
+    )]
     public function process(
         Document $document,
         TextExtractionService $textExtractionService,
@@ -86,6 +194,13 @@ class DocumentController extends Controller
                 'message' => 'Document processing failed.',
                 'document' => $document->fresh(),
             ], 404);
+        }
+
+        if ($document->invoice !== null) {
+            return response()->json([
+                'message' => 'Document has already been processed.',
+                'document' => $document->fresh(),
+            ], 409);
         }
 
         $document->update([
