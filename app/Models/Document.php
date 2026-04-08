@@ -14,6 +14,8 @@ class Document extends Model
 
     protected $fillable = [
         'original_name',
+        'title',
+        'notes',
         'stored_path',
         'mime_type',
         'file_size',
@@ -21,7 +23,7 @@ class Document extends Model
         'ocr_text',
         'ai_raw_response',
         'error_message',
-        'processed_at',
+        'processed_at'
     ];
 
     protected $casts = [

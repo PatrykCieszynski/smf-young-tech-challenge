@@ -15,6 +15,8 @@ return new class extends Migration
             $table->id();
 
             $table->string('original_name');
+            $table->string('title')->nullable();
+            $table->text('notes')->nullable();
             $table->string('stored_path')->unique();
             $table->string('mime_type', 100);
             $table->unsignedBigInteger('file_size');

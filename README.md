@@ -1,24 +1,38 @@
 # smf-young-tech-challenge
 
-Simple Laravel API for uploading and processing invoice-like documents.
+Laravel API for uploading invoice-like documents, extracting text, transforming it into structured data with Ollama, and saving the result into SQLite.
 
-## Current scope
+## Features
 
-This project currently provides a basic `documents` flow:
-
-- upload a document file (`pdf`, `jpg`, `jpeg`, `png`)
+- upload document files (`pdf`, `jpg`, `jpeg`, `png`)
 - store document metadata in SQLite
-- list uploaded documents
-- get document details
-- delete a document
-- process uploaded documents
-- extract text from images using Tesseract OCR
-- extract text from PDF files using `pdftotext`
-- extract structured invoice data with Ollama
-- store extracted text in the `ocr_text` field
-- store raw AI output in the `ai_raw_response` field
-- persist parsed invoice data into SQL tables
-- create linked records in `contractors`, `invoices`, `items`, and `payments`
+- list, show, and delete uploaded documents
+- process documents through:
+    - image OCR with Tesseract
+    - PDF text extraction with `pdftotext`
+    - structured invoice extraction with Ollama
+- store extracted text in `ocr_text`
+- store raw AI output in `ai_raw_response`
+- persist parsed data into linked SQL tables:
+    - `contractors`
+    - `invoices`
+    - `items`
+    - `payments`
+- read persisted invoices through API endpoints
+- Swagger UI available for API documentation
+
+## Architecture overview
+
+The application is split into a few simple layers:
+
+- `DocumentController` handles document upload, listing, details, deletion, metadata update, and processing
+- `TextExtractionService` extracts text from uploaded files
+    - `ImageTextExtractor` uses Tesseract OCR
+    - `PdfTextExtractor` uses `pdftotext`
+- `DocumentAiExtractionService` sends extracted text to Ollama and returns structured invoice data
+- `InvoicePersistenceService` saves parsed data into SQLite tables: `contractors`, `invoices`, `items`, and `payments`
+- `InvoiceController` exposes persisted invoice data through read endpoints
+- OpenAPI / Swagger documents the public API
 
 ## Tech stack
 
@@ -62,13 +76,19 @@ composer run setup
 php artisan serve
 ```
 
+Application URL:
+
+```text
+http://127.0.0.1:8000
+```
+
 ## AI setup
 
 Make sure Ollama is running locally and the configured model is available.
 
 Example:
 
-```cmd
+```bash
 ollama pull llama3.1
 ollama run llama3.1
 ```
@@ -96,12 +116,16 @@ http://smf-young-tech-challenge.test
 - `POST /api/documents`
 - `GET /api/documents`
 - `GET /api/documents/{id}`
+- `PATCH /api/documents/{id}`
 - `DELETE /api/documents/{id}`
 - `POST /api/documents/{id}/process`
 
-## Request example
+### Invoices
 
-### Upload document
+- `GET /api/invoices`
+- `GET /api/invoices/{id}`
+
+## Upload request example
 
 **Endpoint:**
 
@@ -118,6 +142,8 @@ multipart/form-data
 **Form field:**
 
 - `file` - uploaded file
+- `title` - custom title for document, can be null
+- `notes` custom notes for document, can be null
 
 **Supported file types:**
 
@@ -126,23 +152,10 @@ multipart/form-data
 - `jpeg`
 - `png`
 
-## Current status
+## Swagger
 
-### Implemented
+Swagger UI is available at:
 
-- document database model
-- document migration
-- file upload endpoint
-- list, details and delete endpoints
-- document processing endpoint
-- image OCR with Tesseract
-- PDF text extraction with `pdftotext`
-- AI-based structured invoice data extraction with Ollama
-- extracted text storage in `ocr_text`
-- raw AI response storage in `ai_raw_response`
-- parsed invoice data persistence to SQL tables
-- linked invoice storage in `contractors`, `invoices`, `items`, and `payments`
-
-### Planned next
-
-- Swagger documentation
+```text
+http://127.0.0.1:8000/api/documentation
+```

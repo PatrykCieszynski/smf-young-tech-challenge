@@ -29,6 +29,16 @@ class StoreDocumentRequest extends FormRequest
                 'mimes:pdf,jpg,jpeg,png',
                 'max:10240',
             ],
+            'title' => [
+                'nullable',
+                'string',
+                'max:255',
+            ],
+            'notes' => [
+                'nullable',
+                'string',
+                'max:5000',
+            ],
         ];
     }
 }
